@@ -14,7 +14,8 @@
     "dotenv": "^17.2.3",
     "openai": "^6.9.1",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.2"
+    "rxjs": "^7.8.2",
+    "undici": "^8.3.0"
   },
   "devDependencies": {
     "@types/multer": "^2.0.0",

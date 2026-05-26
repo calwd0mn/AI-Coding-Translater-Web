@@ -7,7 +7,12 @@ import {
 } from '@nestjs/common'
 import OpenAI from 'openai'
 import { toFile } from 'openai/uploads'
+import { ProxyAgent, setGlobalDispatcher } from 'undici'
 import { TranslateAudioDto } from './dto/translate-audio.dto'
+import {
+  formatPipelineConnectionError,
+  parseOpenAITimeoutMs,
+} from './pipeline.error-utils'
 import {
   PipelineLogEntry,
   PipelineStage,
@@ -37,7 +42,16 @@ export class PipelineService {
       return
     }
 
-    this.openai = new OpenAI({ apiKey })
+    const proxyUrl = this.getProxyUrl()
+
+    if (proxyUrl) {
+      setGlobalDispatcher(new ProxyAgent(proxyUrl))
+    }
+
+    this.openai = new OpenAI({
+      apiKey,
+      timeout: parseOpenAITimeoutMs(process.env.OPENAI_TIMEOUT_MS),
+    })
   }
 
   async translateAudio(
@@ -103,6 +117,24 @@ export class PipelineService {
         '后端未配置 OPENAI_API_KEY，请在 backend/.env 中设置后重启服务',
       )
     }
+  }
+
+  private getProxyUrl(): string | null {
+    const proxyCandidates = [
+      process.env.HTTPS_PROXY,
+      process.env.HTTP_PROXY,
+      process.env.https_proxy,
+      process.env.http_proxy,
+    ]
+
+    for (const candidate of proxyCandidates) {
+      const value = candidate?.trim()
+      if (value) {
+        return value
+      }
+    }
+
+    return null
   }
 
   private normalizeLanguage(
@@ -234,6 +266,14 @@ export class PipelineService {
     error: unknown,
     logs: PipelineLogEntry[],
   ): HttpException {
+    const connectionMessage = formatPipelineConnectionError(error)
+    if (connectionMessage) {
+      return new HttpException(
+        { message: connectionMessage, logs },
+        HttpStatus.GATEWAY_TIMEOUT,
+      )
+    }
+
     if (error instanceof HttpException) {
       const response = error.getResponse()
       const message = this.extractExceptionMessage(response, error.message)
