@@ -1,11 +1,14 @@
-import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common'
+import { BadRequestException, Inject, Injectable, InternalServerErrorException } from '@nestjs/common'
 import { OpenAIService } from '../openai/openai.service'
 
 const TRANSLATION_MODEL = 'gpt-5-mini'
 
 @Injectable()
 export class TranslationService {
-  constructor(private readonly openAIService: OpenAIService) {}
+  constructor(
+    @Inject(OpenAIService)
+    private readonly openAIService: OpenAIService,
+  ) {}
 
   async translate(
     transcript: string,

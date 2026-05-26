@@ -1,11 +1,14 @@
-import { Injectable } from '@nestjs/common'
+import { Inject, Injectable } from '@nestjs/common'
 import { OpenAIService } from '../openai/openai.service'
 
 const TTS_MODEL = 'gpt-4o-mini-tts'
 
 @Injectable()
 export class TtsService {
-  constructor(private readonly openAIService: OpenAIService) {}
+  constructor(
+    @Inject(OpenAIService)
+    private readonly openAIService: OpenAIService,
+  ) {}
 
   async synthesizeSpeech(
     text: string,

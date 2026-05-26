@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common'
+import { Inject, Injectable } from '@nestjs/common'
 import { toFile } from 'openai/uploads'
 import { OpenAIService } from '../openai/openai.service'
 
@@ -7,7 +7,10 @@ const AUTO_SOURCE_LANGUAGE = 'auto'
 
 @Injectable()
 export class AsrService {
-  constructor(private readonly openAIService: OpenAIService) {}
+  constructor(
+    @Inject(OpenAIService)
+    private readonly openAIService: OpenAIService,
+  ) {}
 
   async transcribe(
     audioFile: Express.Multer.File,
