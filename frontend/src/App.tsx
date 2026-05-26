@@ -17,6 +17,7 @@ function App() {
     setTargetLanguage,
     submitPipeline,
     resetPipeline,
+    downloadTranscript,
     downloadTranslation,
     downloadSpeech,
   } = usePipeline()
@@ -43,6 +44,7 @@ function App() {
 
         <ResultsSection
           state={state}
+          onDownloadTranscript={downloadTranscript}
           onDownloadTranslation={downloadTranslation}
         />
 

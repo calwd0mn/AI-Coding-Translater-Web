@@ -2,11 +2,13 @@ import type { PipelineState } from '../types/pipeline'
 
 interface ResultsSectionProps {
   state: PipelineState
+  onDownloadTranscript: () => void
   onDownloadTranslation: () => void
 }
 
 export function ResultsSection({
   state,
+  onDownloadTranscript,
   onDownloadTranslation,
 }: ResultsSectionProps) {
   return (
@@ -14,6 +16,13 @@ export function ResultsSection({
       <article className="result-panel">
         <div className="panel-heading">
           <h2>识别文本</h2>
+          <button
+            disabled={!state.transcript}
+            type="button"
+            onClick={onDownloadTranscript}
+          >
+            下载 TXT
+          </button>
         </div>
         <p>{state.transcript || '等待音频识别结果'}</p>
       </article>
