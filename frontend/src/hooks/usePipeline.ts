@@ -2,6 +2,7 @@ import { useEffect, useReducer } from 'react'
 import type {
   PipelineLogEntry,
   PipelineSSEEvent,
+  PipelineStage,
   PipelineState,
   TranslateAudioResponse,
 } from '../types/pipeline'
@@ -18,7 +19,7 @@ type PipelineAction =
   | { type: 'sourceLanguageChanged'; value: string }
   | { type: 'targetLanguageChanged'; value: string }
   | { type: 'runStarted' }
-  | { type: 'stageStarted'; stage: PipelineSSEEvent extends { type: 'stage:start'; stage: infer S } ? S : string }
+  | { type: 'stageStarted'; stage: PipelineStage }
   | { type: 'stageDone'; stage: string; message: string; durationMs: number }
   | { type: 'runSucceeded'; payload: TranslateAudioResponse; audioUrl: string }
   | { type: 'runFailed'; error: string; logs: PipelineLogEntry[] }
@@ -293,7 +294,16 @@ export function usePipeline() {
           error: '音频下载失败，请重新运行流水线',
           logs: state.logs,
         })
-      })
+    })
+  }
+
+  function downloadTranscript(): void {
+    if (!state.transcript) return
+
+    const blob = new Blob([state.transcript], {
+      type: 'text/plain;charset=utf-8',
+    })
+    downloadBlob(blob, 'transcript.txt')
   }
 
   return {
@@ -304,6 +314,7 @@ export function usePipeline() {
     setTargetLanguage,
     submitPipeline,
     resetPipeline,
+    downloadTranscript,
     downloadTranslation,
     downloadSpeech,
   }
