@@ -2,6 +2,7 @@ import {
   BadRequestException,
   HttpException,
   HttpStatus,
+  Inject,
   Injectable,
 } from '@nestjs/common'
 import { AsrService } from '../asr/asr.service'
@@ -27,8 +28,11 @@ interface TimedResult<T> {
 @Injectable()
 export class PipelineService {
   constructor(
+    @Inject(AsrService)
     private readonly asrService: AsrService,
+    @Inject(TranslationService)
     private readonly translationService: TranslationService,
+    @Inject(TtsService)
     private readonly ttsService: TtsService,
   ) {}
 
