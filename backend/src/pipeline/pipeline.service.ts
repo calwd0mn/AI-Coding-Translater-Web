@@ -2,17 +2,14 @@ import {
   BadRequestException,
   HttpException,
   HttpStatus,
+  Inject,
   Injectable,
-  InternalServerErrorException,
 } from '@nestjs/common'
-import OpenAI from 'openai'
-import { toFile } from 'openai/uploads'
-import { ProxyAgent, setGlobalDispatcher } from 'undici'
+import { AsrService } from '../asr/asr.service'
+import { TranslationService } from '../translation/translation.service'
+import { TtsService } from '../tts/tts.service'
 import { TranslateAudioDto } from './dto/translate-audio.dto'
-import {
-  formatPipelineConnectionError,
-  parseOpenAITimeoutMs,
-} from './pipeline.error-utils'
+import { formatPipelineConnectionError } from './pipeline.error-utils'
 import {
   PipelineLogEntry,
   PipelineSSEEvent,
@@ -20,9 +17,6 @@ import {
   TranslateAudioResponse,
 } from './pipeline.types'
 
-const ASR_MODEL = 'gpt-4o-mini-transcribe'
-const TRANSLATION_MODEL = 'gpt-5-mini'
-const TTS_MODEL = 'gpt-4o-mini-tts'
 const DEFAULT_SOURCE_LANGUAGE = 'auto'
 const DEFAULT_TARGET_LANGUAGE = 'en'
 
@@ -31,29 +25,20 @@ interface TimedResult<T> {
   durationMs: number
 }
 
+type AsrRunner = Pick<AsrService, 'transcribe'>
+type TranslationRunner = Pick<TranslationService, 'translate'>
+type TtsRunner = Pick<TtsService, 'synthesizeSpeech'>
+
 @Injectable()
 export class PipelineService {
-  private readonly openai: OpenAI
-
-  constructor() {
-    const apiKey = process.env.OPENAI_API_KEY
-
-    if (!apiKey) {
-      this.openai = new OpenAI({ apiKey: 'missing-key' })
-      return
-    }
-
-    const proxyUrl = this.getProxyUrl()
-
-    if (proxyUrl) {
-      setGlobalDispatcher(new ProxyAgent(proxyUrl))
-    }
-
-    this.openai = new OpenAI({
-      apiKey,
-      timeout: parseOpenAITimeoutMs(process.env.OPENAI_TIMEOUT_MS),
-    })
-  }
+  constructor(
+    @Inject(AsrService)
+    private readonly asrService: AsrRunner,
+    @Inject(TranslationService)
+    private readonly translationService: TranslationRunner,
+    @Inject(TtsService)
+    private readonly ttsService: TtsRunner,
+  ) {}
 
   async translateAudio(
     audioFile: Express.Multer.File,
@@ -74,14 +59,14 @@ export class PipelineService {
 
     try {
       const transcriptResult = await this.runStage('asr', logs, async () =>
-        this.transcribe(audioFile, sourceLanguage),
+        this.asrService.transcribe(audioFile, sourceLanguage),
       )
 
       const translationResult = await this.runStage(
         'translation',
         logs,
         async () =>
-          this.translate(
+          this.translationService.translate(
             transcriptResult.value,
             sourceLanguage,
             targetLanguage,
@@ -89,7 +74,7 @@ export class PipelineService {
       )
 
       const speechResult = await this.runStage('tts', logs, async () =>
-        this.synthesizeSpeech(translationResult.value, targetLanguage),
+        this.ttsService.synthesizeSpeech(translationResult.value, targetLanguage),
       )
 
       return {
@@ -132,7 +117,7 @@ export class PipelineService {
     try {
       yield { type: 'stage:start', stage: 'asr' }
       const transcriptResult = await this.runStage('asr', logs, async () =>
-        this.transcribe(audioFile, sourceLanguage),
+        this.asrService.transcribe(audioFile, sourceLanguage),
       )
       yield {
         type: 'stage:done',
@@ -146,7 +131,7 @@ export class PipelineService {
         'translation',
         logs,
         async () =>
-          this.translate(
+          this.translationService.translate(
             transcriptResult.value,
             sourceLanguage,
             targetLanguage,
@@ -161,7 +146,7 @@ export class PipelineService {
 
       yield { type: 'stage:start', stage: 'tts' }
       const speechResult = await this.runStage('tts', logs, async () =>
-        this.synthesizeSpeech(translationResult.value, targetLanguage),
+        this.ttsService.synthesizeSpeech(translationResult.value, targetLanguage),
       )
       yield {
         type: 'stage:done',
@@ -208,97 +193,12 @@ export class PipelineService {
     }
   }
 
-  private getProxyUrl(): string | null {
-    const proxyCandidates = [
-      process.env.HTTPS_PROXY,
-      process.env.HTTP_PROXY,
-      process.env.https_proxy,
-      process.env.http_proxy,
-    ]
-
-    for (const candidate of proxyCandidates) {
-      const value = candidate?.trim()
-      if (value) {
-        return value
-      }
-    }
-
-    return null
-  }
-
   private normalizeLanguage(
     value: string | undefined,
     fallback: string,
   ): string {
     const trimmed = value?.trim()
     return trimmed ? trimmed : fallback
-  }
-
-  private async transcribe(
-    audioFile: Express.Multer.File,
-    sourceLanguage: string,
-  ): Promise<string> {
-    const file = await toFile(audioFile.buffer, audioFile.originalname, {
-      type: audioFile.mimetype,
-    })
-
-    const transcript = await this.openai.audio.transcriptions.create({
-      file,
-      model: ASR_MODEL,
-      response_format: 'text',
-      ...(sourceLanguage === DEFAULT_SOURCE_LANGUAGE
-        ? {}
-        : { language: sourceLanguage }),
-    })
-
-    return transcript.trim()
-  }
-
-  private async translate(
-    transcript: string,
-    sourceLanguage: string,
-    targetLanguage: string,
-  ): Promise<string> {
-    if (!transcript.trim()) {
-      throw new BadRequestException('ASR 未识别到有效文本，无法继续翻译')
-    }
-
-    const response = await this.openai.responses.create({
-      model: TRANSLATION_MODEL,
-      input: [
-        {
-          role: 'system',
-          content:
-            'You are a translation engine. Return only the translated text, without explanations.',
-        },
-        {
-          role: 'user',
-          content: `Translate this text from ${sourceLanguage} to ${targetLanguage}:\n\n${transcript}`,
-        },
-      ],
-    })
-
-    const translatedText = response.output_text.trim()
-    if (!translatedText) {
-      throw new InternalServerErrorException('翻译服务未返回有效译文')
-    }
-
-    return translatedText
-  }
-
-  private async synthesizeSpeech(
-    text: string,
-    targetLanguage: string,
-  ): Promise<ArrayBuffer> {
-    const speech = await this.openai.audio.speech.create({
-      model: TTS_MODEL,
-      voice: 'alloy',
-      input: text,
-      response_format: 'mp3',
-      instructions: `Speak naturally in ${targetLanguage}.`,
-    })
-
-    return speech.arrayBuffer()
   }
 
   private async runStage<T>(
