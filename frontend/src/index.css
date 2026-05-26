@@ -1,13 +1,16 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 :root {
   font-family:
-    Aptos,
+    'Inter',
     'Segoe UI',
     'PingFang SC',
-    'Hiragino Sans GB',
     'Microsoft YaHei',
+    'Hiragino Sans GB',
+    'Helvetica Neue',
     sans-serif;
-  color: #17211d;
-  background: #f6f8f5;
+  color: #1d1d1f;
+  background: #ffffff;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -29,11 +32,12 @@ body {
 }
 
 h1,
-h2 {
-  font-family:
-    'Iowan Old Style',
-    'Palatino Linotype',
-    'Noto Serif SC',
-    serif;
-  font-weight: 700;
+h2,
+h3 {
+  margin: 0;
+  font-weight: 600;
+}
+
+p {
+  margin: 0;
 }

@@ -11,7 +11,7 @@ export function ResultsSection({
 }: ResultsSectionProps) {
   return (
     <section className="results-grid">
-      <article className="result-panel result-panel-primary">
+      <article className="result-panel">
         <div className="panel-heading">
           <h2>识别文本</h2>
         </div>

@@ -30,6 +30,7 @@ export interface PipelineState {
   sourceLanguage: string
   targetLanguage: string
   status: PipelineStatus
+  activeStage: PipelineStage | null
   transcript: string
   translation: string
   audioUrl: string
@@ -37,6 +38,13 @@ export interface PipelineState {
   logs: PipelineLogEntry[]
   error: string
 }
+
+export type PipelineSSEEvent =
+  | { type: 'stage:start'; stage: PipelineStage }
+  | { type: 'stage:done'; stage: PipelineStage; message: string; durationMs: number }
+  | { type: 'stage:error'; stage: PipelineStage; message: string; durationMs: number }
+  | { type: 'result'; data: TranslateAudioResponse }
+  | { type: 'error'; message: string; logs: PipelineLogEntry[] }
 
 export interface ApiErrorResponse {
   message?: string | string[]

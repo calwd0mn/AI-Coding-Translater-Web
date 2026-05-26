@@ -1,82 +1,47 @@
-import type { ChangeEvent, FormEvent } from 'react'
-import { languages, targetLanguages } from '../lib/pipeline-options'
+import type { ChangeEvent } from 'react'
 import { formatBytes } from '../lib/pipeline-utils'
 import type { PipelineState } from '../types/pipeline'
 
 interface ControlPanelProps {
   state: PipelineState
-  canRun: boolean
   onFileChange: (file: File | null) => void
-  onSourceLanguageChange: (value: string) => void
-  onTargetLanguageChange: (value: string) => void
-  onSubmit: () => Promise<void>
 }
 
-export function ControlPanel({
-  state,
-  canRun,
-  onFileChange,
-  onSourceLanguageChange,
-  onTargetLanguageChange,
-  onSubmit,
-}: ControlPanelProps) {
-  function handleSubmit(event: FormEvent<HTMLFormElement>): void {
-    event.preventDefault()
-    void onSubmit()
-  }
-
+export function ControlPanel({ state, onFileChange }: ControlPanelProps) {
   function handleFileChange(event: ChangeEvent<HTMLInputElement>): void {
     onFileChange(event.target.files?.[0] ?? null)
   }
 
   return (
-    <form className="control-panel" onSubmit={handleSubmit}>
+    <div className="upload-area">
       <label className="upload-zone">
         <input accept="audio/*" type="file" onChange={handleFileChange} />
-        <span className="upload-kicker">主输入</span>
+        <span className="upload-icon">
+          <svg
+            width="32"
+            height="32"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M12 16V4M12 4L8 8M12 4L16 8" />
+            <path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2" />
+          </svg>
+        </span>
         <span className="upload-title">
-          {state.file ? state.file.name : '选择一段音频开始运行'}
+          {state.file
+            ? state.file.name
+            : '拖拽音频文件到此处，或点击上传'}
         </span>
         <span className="upload-meta">
           {state.file
-            ? `${formatBytes(state.file.size)} · ${state.file.type || 'audio'}`
+            ? `${formatBytes(state.file.size)} · ${state.file.type || '音频文件'}`
             : '支持 WAV、MP3、M4A、WEBM、OGG，最大 25 MB'}
         </span>
       </label>
-
-      <div className="language-panel">
-        <label>
-          源语言
-          <select
-            value={state.sourceLanguage}
-            onChange={(event) => onSourceLanguageChange(event.target.value)}
-          >
-            {languages.map((language) => (
-              <option key={language.value} value={language.value}>
-                {language.label}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label>
-          目标语言
-          <select
-            value={state.targetLanguage}
-            onChange={(event) => onTargetLanguageChange(event.target.value)}
-          >
-            {targetLanguages.map((language) => (
-              <option key={language.value} value={language.value}>
-                {language.label}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
-
-      <button className="primary-button" disabled={!canRun} type="submit">
-        {state.status === 'running' ? '处理中...' : '运行流水线'}
-      </button>
-    </form>
+    </div>
   )
 }

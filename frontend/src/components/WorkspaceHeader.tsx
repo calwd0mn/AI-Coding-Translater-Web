@@ -1,36 +1,10 @@
-interface WorkspaceHeaderProps {
-  disabled: boolean
-  onReset: () => void
-}
-
-export function WorkspaceHeader({
-  disabled,
-  onReset,
-}: WorkspaceHeaderProps) {
+export function WorkspaceHeader() {
   return (
     <header className="workspace-header">
-      <div className="hero-copy">
-        <p className="eyebrow">AI Voice Pipeline</p>
-        <h1>把一段声音，变成另一种语言的完整表达。</h1>
-        <p className="subtitle">
-          上传音频后，系统会依次完成识别、翻译和语音合成。整条链路集中展示，方便调试、演示和结果复查。
-        </p>
-      </div>
-      <div className="hero-aside">
-        <div className="hero-note">
-          <span>Pipeline</span>
-          <strong>ASR → MT → TTS</strong>
-          <p>保留现有流程，只把界面和结构整理得更清楚。</p>
-        </div>
-        <button
-          className="ghost-button"
-          disabled={disabled}
-          type="button"
-          onClick={onReset}
-        >
-          重置
-        </button>
-      </div>
+      <h1>语音翻译</h1>
+      <p className="subtitle">
+        上传音频，自动完成识别、翻译与合成。支持中、英、日、韩、法、德、西七种语言。
+      </p>
     </header>
   )
 }

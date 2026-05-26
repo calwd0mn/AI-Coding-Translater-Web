@@ -1,6 +1,7 @@
 import { useEffect, useReducer } from 'react'
 import type {
   PipelineLogEntry,
+  PipelineSSEEvent,
   PipelineState,
   TranslateAudioResponse,
 } from '../types/pipeline'
@@ -17,6 +18,8 @@ type PipelineAction =
   | { type: 'sourceLanguageChanged'; value: string }
   | { type: 'targetLanguageChanged'; value: string }
   | { type: 'runStarted' }
+  | { type: 'stageStarted'; stage: PipelineSSEEvent extends { type: 'stage:start'; stage: infer S } ? S : string }
+  | { type: 'stageDone'; stage: string; message: string; durationMs: number }
   | { type: 'runSucceeded'; payload: TranslateAudioResponse; audioUrl: string }
   | { type: 'runFailed'; error: string; logs: PipelineLogEntry[] }
   | { type: 'reset' }
@@ -26,6 +29,7 @@ const initialState: PipelineState = {
   sourceLanguage: 'auto',
   targetLanguage: 'en',
   status: 'idle',
+  activeStage: null,
   transcript: '',
   translation: '',
   audioUrl: '',
@@ -54,6 +58,7 @@ function pipelineReducer(
         ...state,
         file: action.file,
         status: 'ready',
+        activeStage: null,
         transcript: '',
         translation: '',
         audioUrl: '',
@@ -69,6 +74,7 @@ function pipelineReducer(
       return {
         ...state,
         status: 'running',
+        activeStage: null,
         transcript: '',
         translation: '',
         audioUrl: '',
@@ -76,10 +82,25 @@ function pipelineReducer(
         logs: [],
         error: '',
       }
+    case 'stageStarted':
+      return { ...state, activeStage: action.stage }
+    case 'stageDone':
+      return {
+        ...state,
+        logs: [
+          ...state.logs,
+          {
+            stage: action.stage as PipelineLogEntry['stage'],
+            message: action.message,
+            durationMs: action.durationMs,
+          },
+        ],
+      }
     case 'runSucceeded':
       return {
         ...state,
         status: 'success',
+        activeStage: null,
         sourceLanguage: action.payload.sourceLanguage,
         targetLanguage: action.payload.targetLanguage,
         transcript: action.payload.transcript,
@@ -93,6 +114,7 @@ function pipelineReducer(
       return {
         ...state,
         status: 'failed',
+        activeStage: null,
         logs: action.logs,
         error: action.error,
       }
@@ -101,9 +123,9 @@ function pipelineReducer(
   }
 }
 
-async function requestPipeline(
+async function* streamPipeline(
   state: PipelineState,
-): Promise<TranslateAudioResponse> {
+): AsyncGenerator<PipelineSSEEvent, void, undefined> {
   if (!state.file) {
     throw new PipelineRequestError('请先上传音频文件', [])
   }
@@ -113,7 +135,7 @@ async function requestPipeline(
   formData.append('sourceLanguage', state.sourceLanguage)
   formData.append('targetLanguage', state.targetLanguage)
 
-  const response = await fetch('/api/pipeline/translate-audio', {
+  const response = await fetch('/api/pipeline/translate-audio-stream', {
     method: 'POST',
     body: formData,
   })
@@ -126,7 +148,38 @@ async function requestPipeline(
     throw new PipelineRequestError(message, errorBody.logs ?? [])
   }
 
-  return response.json() as Promise<TranslateAudioResponse>
+  const reader = response.body?.getReader()
+  if (!reader) {
+    throw new PipelineRequestError('浏览器不支持流式响应', [])
+  }
+
+  const decoder = new TextDecoder()
+  let buffer = ''
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+
+      buffer += decoder.decode(value, { stream: true })
+      const lines = buffer.split('\n')
+      buffer = lines.pop() ?? ''
+
+      for (const line of lines) {
+        const trimmed = line.trim()
+        if (!trimmed.startsWith('data: ')) continue
+
+        const json = trimmed.slice(6)
+        try {
+          yield JSON.parse(json) as PipelineSSEEvent
+        } catch {
+          // skip malformed lines
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock()
+  }
 }
 
 export function usePipeline() {
@@ -142,9 +195,7 @@ export function usePipeline() {
   }, [state.audioUrl])
 
   function selectFile(file: File | null): void {
-    if (!file) {
-      return
-    }
+    if (!file) return
 
     const validationError = validateAudioFile(file)
     if (validationError) {
@@ -167,10 +218,50 @@ export function usePipeline() {
     dispatch({ type: 'runStarted' })
 
     try {
-      const result = await requestPipeline(state)
-      const audioBlob = base64ToBlob(result.audioBase64, result.audioMimeType)
-      const audioUrl = URL.createObjectURL(audioBlob)
-      dispatch({ type: 'runSucceeded', payload: result, audioUrl })
+      for await (const event of streamPipeline(state)) {
+        switch (event.type) {
+          case 'stage:start':
+            dispatch({ type: 'stageStarted', stage: event.stage })
+            break
+          case 'stage:done':
+            dispatch({
+              type: 'stageDone',
+              stage: event.stage,
+              message: event.message,
+              durationMs: event.durationMs,
+            })
+            break
+          case 'stage:error':
+            dispatch({
+              type: 'stageDone',
+              stage: event.stage,
+              message: event.message,
+              durationMs: event.durationMs,
+            })
+            break
+          case 'result':
+            {
+              const audioBlob = base64ToBlob(
+                event.data.audioBase64,
+                event.data.audioMimeType,
+              )
+              const audioUrl = URL.createObjectURL(audioBlob)
+              dispatch({
+                type: 'runSucceeded',
+                payload: event.data,
+                audioUrl,
+              })
+            }
+            break
+          case 'error':
+            dispatch({
+              type: 'runFailed',
+              error: event.message,
+              logs: event.logs,
+            })
+            break
+        }
+      }
     } catch (error) {
       const logs = error instanceof PipelineRequestError ? error.logs : []
       dispatch({ type: 'runFailed', error: getErrorMessage(error), logs })
@@ -182,9 +273,7 @@ export function usePipeline() {
   }
 
   function downloadTranslation(): void {
-    if (!state.translation) {
-      return
-    }
+    if (!state.translation) return
 
     const blob = new Blob([state.translation], {
       type: 'text/plain;charset=utf-8',
@@ -193,9 +282,7 @@ export function usePipeline() {
   }
 
   function downloadSpeech(): void {
-    if (!state.audioUrl) {
-      return
-    }
+    if (!state.audioUrl) return
 
     fetch(state.audioUrl)
       .then((response) => response.blob())

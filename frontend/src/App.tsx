@@ -4,6 +4,7 @@ import { LogPanel } from './components/LogPanel'
 import { OutputPanel } from './components/OutputPanel'
 import { PipelineStrip } from './components/PipelineStrip'
 import { ResultsSection } from './components/ResultsSection'
+import { Sidebar } from './components/Sidebar'
 import { WorkspaceHeader } from './components/WorkspaceHeader'
 import { usePipeline } from './hooks/usePipeline'
 
@@ -21,21 +22,20 @@ function App() {
   } = usePipeline()
 
   return (
-    <main className="app-shell">
-      <section className="workspace">
-        <WorkspaceHeader
-          disabled={state.status === 'running'}
-          onReset={resetPipeline}
-        />
+    <div className="app-shell">
+      <Sidebar
+        state={state}
+        canRun={canRun}
+        onSourceLanguageChange={setSourceLanguage}
+        onTargetLanguageChange={setTargetLanguage}
+        onSubmit={submitPipeline}
+        onReset={resetPipeline}
+      />
 
-        <ControlPanel
-          state={state}
-          canRun={canRun}
-          onFileChange={selectFile}
-          onSourceLanguageChange={setSourceLanguage}
-          onTargetLanguageChange={setTargetLanguage}
-          onSubmit={submitPipeline}
-        />
+      <main className="main-content">
+        <WorkspaceHeader />
+
+        <ControlPanel state={state} onFileChange={selectFile} />
 
         {state.error && <p className="error-banner">{state.error}</p>}
 
@@ -49,8 +49,8 @@ function App() {
         <OutputPanel state={state} onDownloadSpeech={downloadSpeech} />
 
         <LogPanel state={state} />
-      </section>
-    </main>
+      </main>
+    </div>
   )
 }
 
