@@ -525,7 +525,7 @@ function App() {
                 : '完成后可试听和下载'}
             </p>
           </div>
-          <audio controls src={state.audioUrl} />
+          <audio controls src={state.audioUrl || undefined} />
           <button
             disabled={!state.audioUrl}
             type="button"
