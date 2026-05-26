@@ -11,6 +11,9 @@ export function ResultsSection({
   onDownloadTranscript,
   onDownloadTranslation,
 }: ResultsSectionProps) {
+  const transcriptEmpty = !state.transcript
+  const translationEmpty = !state.translation
+
   return (
     <section className="results-grid">
       <article className="result-panel">
@@ -24,7 +27,9 @@ export function ResultsSection({
             下载 TXT
           </button>
         </div>
-        <p>{state.transcript || '等待音频识别结果'}</p>
+        <p className={transcriptEmpty ? 'result-placeholder' : undefined}>
+          {state.transcript || '等待音频识别结果'}
+        </p>
       </article>
 
       <article className="result-panel">
@@ -38,7 +43,9 @@ export function ResultsSection({
             下载 TXT
           </button>
         </div>
-        <p>{state.translation || '等待目标语言译文'}</p>
+        <p className={translationEmpty ? 'result-placeholder' : undefined}>
+          {state.translation || '等待目标语言译文'}
+        </p>
       </article>
     </section>
   )

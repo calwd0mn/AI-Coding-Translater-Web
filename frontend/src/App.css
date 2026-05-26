@@ -1,9 +1,11 @@
 /* ===== Shell ===== */
 .app-shell {
   display: grid;
-  grid-template-columns: 300px 1fr;
+  grid-template-columns: 272px minmax(0, 1fr);
   min-height: 100vh;
-  background: #ffffff;
+  background:
+    radial-gradient(circle at top right, rgba(99, 102, 241, 0.08), transparent 28%),
+    linear-gradient(180deg, #f8faff 0%, #ffffff 24%);
 }
 
 /* ===== Sidebar ===== */
@@ -14,9 +16,10 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
-  padding: 36px 28px;
-  background: #f8f9fa;
-  border-right: 1px solid rgba(0, 0, 0, 0.06);
+  padding: 32px 24px;
+  background: rgba(248, 249, 252, 0.82);
+  backdrop-filter: blur(18px);
+  border-right: 1px solid rgba(99, 102, 241, 0.08);
   overflow-y: auto;
 }
 
@@ -144,28 +147,57 @@
 
 /* ===== Main Content ===== */
 .main-content {
-  padding: 44px 48px 64px;
-  max-width: 1020px;
+  padding: 30px 34px 40px;
+}
+
+.workspace-grid {
+  width: 100%;
+  max-width: 1460px;
+  margin: 0 auto;
   display: grid;
-  gap: 28px;
+  grid-template-columns: minmax(0, 1.14fr) minmax(360px, 0.86fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.workspace-primary,
+.workspace-secondary {
+  min-width: 0;
+  display: grid;
+  gap: 20px;
+}
+
+.workspace-primary {
+  padding: 28px;
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(99, 102, 241, 0.08);
+  box-shadow:
+    0 20px 60px rgba(15, 23, 42, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.workspace-secondary {
   align-content: start;
 }
 
 /* ===== Header ===== */
 .workspace-header {
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 .workspace-header h1 {
-  font-size: 1.75rem;
-  font-weight: 700;
+  font-size: clamp(2rem, 3vw, 2.6rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
   color: #1d1d1f;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
 .subtitle {
-  font-size: 0.9375rem;
-  line-height: 1.6;
+  max-width: 62ch;
+  font-size: 0.975rem;
+  line-height: 1.7;
   color: #6b7280;
   margin: 0;
 }
@@ -177,19 +209,19 @@
   align-items: center;
   justify-content: center;
   gap: 10px;
-  min-height: 180px;
-  border: 2px dashed rgba(0, 0, 0, 0.12);
-  border-radius: 12px;
-  background: #fafbfc;
-  padding: 36px 32px;
+  min-height: 208px;
+  border: 1.5px dashed rgba(99, 102, 241, 0.18);
+  border-radius: 24px;
+  background: #ffffff;
+  padding: 40px 36px;
   cursor: pointer;
   transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
 }
 
 .upload-zone:hover {
   border-color: #6366f1;
-  background: #f8f7ff;
-  box-shadow: 0 2px 12px rgba(99, 102, 241, 0.06);
+  background: #f8faff;
+  box-shadow: 0 16px 40px rgba(99, 102, 241, 0.08);
 }
 
 .upload-zone input {
@@ -198,8 +230,8 @@
 
 .upload-icon {
   color: #6366f1;
-  opacity: 0.6;
-  margin-bottom: 4px;
+  opacity: 0.72;
+  margin-bottom: 6px;
 }
 
 .upload-zone:hover .upload-icon {
@@ -207,8 +239,8 @@
 }
 
 .upload-title {
-  font-size: 1.0625rem;
-  font-weight: 600;
+  font-size: 1.2rem;
+  font-weight: 700;
   color: #1d1d1f;
   text-align: center;
   word-break: break-word;
@@ -216,7 +248,7 @@
 }
 
 .upload-meta {
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   color: #9ca3af;
 }
 
@@ -234,7 +266,7 @@
 /* ===== Pipeline Workflow ===== */
 .pipeline-workflow {
   position: relative;
-  padding: 12px 0 8px;
+  padding: 10px 0 4px;
 }
 
 /* --- SVG edges --- */
@@ -254,7 +286,7 @@
   z-index: 1;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
+  gap: 16px;
   align-items: center;
 }
 
@@ -296,9 +328,9 @@
   min-width: 0;
   background: #ffffff;
   border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 14px;
-  padding: 18px 20px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  border-radius: 18px;
+  padding: 20px 20px 18px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
   transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
 }
 
@@ -469,16 +501,18 @@
 /* ===== Results ===== */
 .results-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 18px;
+  grid-template-columns: 1fr;
+  gap: 16px;
 }
 
 .result-panel {
   border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 12px;
-  background: #ffffff;
-  padding: 24px 26px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.94);
+  padding: 22px 24px;
+  box-shadow:
+    0 18px 44px rgba(15, 23, 42, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.78);
 }
 
 .panel-heading {
@@ -518,24 +552,31 @@
 }
 
 .result-panel p {
-  min-height: 160px;
-  line-height: 1.8;
+  min-height: 112px;
+  line-height: 1.75;
   color: #374151;
   white-space: pre-wrap;
   font-size: 0.9375rem;
   margin: 0;
 }
 
+.result-panel p.result-placeholder {
+  color: #9ca3af;
+}
+
 /* ===== Output Panel ===== */
 .output-panel {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 20px;
+  gap: 18px;
   border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 12px;
-  background: #ffffff;
-  padding: 22px 26px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.94);
+  padding: 20px 24px;
+  box-shadow:
+    0 18px 44px rgba(15, 23, 42, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.78);
 }
 
 .output-panel h2 {
@@ -556,9 +597,9 @@
 }
 
 audio {
-  flex: 1;
   min-width: 0;
-  max-width: 400px;
+  width: 100%;
+  max-width: none;
 }
 
 .output-panel > button {
@@ -587,10 +628,13 @@ audio {
 /* ===== Log Panel ===== */
 .log-panel {
   border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 12px;
-  background: #ffffff;
-  padding: 24px 26px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.94);
+  padding: 22px 24px;
+  box-shadow:
+    0 18px 44px rgba(15, 23, 42, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.78);
+  min-height: 280px;
 }
 
 .log-summary {
@@ -660,7 +704,16 @@ audio {
   }
 
   .main-content {
-    padding: 28px 20px 48px;
+    padding: 24px 18px 40px;
+  }
+
+  .workspace-grid {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  .workspace-primary {
+    padding: 20px;
   }
 
   .pipeline-nodes {
@@ -677,7 +730,7 @@ audio {
   }
 
   .output-panel {
-    flex-direction: column;
+    grid-template-columns: 1fr;
     align-items: stretch;
   }
 
@@ -688,14 +741,18 @@ audio {
 
 @media (max-width: 640px) {
   .main-content {
-    padding: 24px 16px 48px;
-    gap: 22px;
+    padding: 18px 14px 32px;
   }
 
   .result-panel,
   .output-panel,
   .log-panel {
     padding: 18px;
+  }
+
+  .workspace-primary {
+    padding: 18px;
+    border-radius: 22px;
   }
 
   .log-panel li {

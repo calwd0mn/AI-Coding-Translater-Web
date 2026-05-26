@@ -34,23 +34,29 @@ function App() {
       />
 
       <main className="main-content">
-        <WorkspaceHeader />
+        <div className="workspace-grid">
+          <section className="workspace-primary">
+            <WorkspaceHeader />
 
-        <ControlPanel state={state} onFileChange={selectFile} />
+            <ControlPanel state={state} onFileChange={selectFile} />
 
-        {state.error && <p className="error-banner">{state.error}</p>}
+            {state.error && <p className="error-banner">{state.error}</p>}
 
-        <PipelineStrip state={state} />
+            <PipelineStrip state={state} />
+          </section>
 
-        <ResultsSection
-          state={state}
-          onDownloadTranscript={downloadTranscript}
-          onDownloadTranslation={downloadTranslation}
-        />
+          <section className="workspace-secondary">
+            <ResultsSection
+              state={state}
+              onDownloadTranscript={downloadTranscript}
+              onDownloadTranslation={downloadTranslation}
+            />
 
-        <OutputPanel state={state} onDownloadSpeech={downloadSpeech} />
+            <OutputPanel state={state} onDownloadSpeech={downloadSpeech} />
 
-        <LogPanel state={state} />
+            <LogPanel state={state} />
+          </section>
+        </div>
       </main>
     </div>
   )
