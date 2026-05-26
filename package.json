@@ -1,0 +1,31 @@
+{
+  "name": "ai-voice-translation-pipeline",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently \"npm --prefix frontend run dev\" \"npm --prefix backend run dev\"",
+    "build": "npm --prefix frontend run build && npm --prefix backend run build",
+    "lint": "npm --prefix frontend run lint && npm --prefix backend run lint",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "prepare": "husky",
+    "cz": "git-cz"
+  },
+  "config": {
+    "commitizen": {
+      "path": "cz-vinyl"
+    }
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^21.0.1",
+    "@commitlint/config-conventional": "^21.0.1",
+    "commitizen": "^4.3.1",
+    "concurrently": "^9.2.1",
+    "cz-vinyl": "^2.5.4",
+    "git-cz": "^4.9.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.5",
+    "prettier": "^3.8.3"
+  }
+}
