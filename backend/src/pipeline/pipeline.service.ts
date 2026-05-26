@@ -15,6 +15,7 @@ import {
 } from './pipeline.error-utils'
 import {
   PipelineLogEntry,
+  PipelineSSEEvent,
   PipelineStage,
   TranslateAudioResponse,
 } from './pipeline.types'
@@ -108,6 +109,94 @@ export class PipelineService {
       }
     } catch (error) {
       throw this.toPipelineException(error, logs)
+    }
+  }
+
+  async *translateAudioStream(
+    audioFile: Express.Multer.File,
+    dto: TranslateAudioDto,
+  ): AsyncGenerator<PipelineSSEEvent, void, undefined> {
+    this.assertConfigured()
+
+    const sourceLanguage = this.normalizeLanguage(
+      dto.sourceLanguage,
+      DEFAULT_SOURCE_LANGUAGE,
+    )
+    const targetLanguage = this.normalizeLanguage(
+      dto.targetLanguage,
+      DEFAULT_TARGET_LANGUAGE,
+    )
+    const totalStart = performance.now()
+    const logs: PipelineLogEntry[] = []
+
+    try {
+      yield { type: 'stage:start', stage: 'asr' }
+      const transcriptResult = await this.runStage('asr', logs, async () =>
+        this.transcribe(audioFile, sourceLanguage),
+      )
+      yield {
+        type: 'stage:done',
+        stage: 'asr',
+        message: '语音识别完成',
+        durationMs: transcriptResult.durationMs,
+      }
+
+      yield { type: 'stage:start', stage: 'translation' }
+      const translationResult = await this.runStage(
+        'translation',
+        logs,
+        async () =>
+          this.translate(
+            transcriptResult.value,
+            sourceLanguage,
+            targetLanguage,
+          ),
+      )
+      yield {
+        type: 'stage:done',
+        stage: 'translation',
+        message: '文本翻译完成',
+        durationMs: translationResult.durationMs,
+      }
+
+      yield { type: 'stage:start', stage: 'tts' }
+      const speechResult = await this.runStage('tts', logs, async () =>
+        this.synthesizeSpeech(translationResult.value, targetLanguage),
+      )
+      yield {
+        type: 'stage:done',
+        stage: 'tts',
+        message: '语音合成完成',
+        durationMs: speechResult.durationMs,
+      }
+
+      yield {
+        type: 'result',
+        data: {
+          sourceLanguage,
+          targetLanguage,
+          transcript: transcriptResult.value,
+          translation: translationResult.value,
+          audioBase64: Buffer.from(speechResult.value).toString('base64'),
+          audioMimeType: 'audio/mpeg',
+          timings: {
+            asrMs: transcriptResult.durationMs,
+            translationMs: translationResult.durationMs,
+            ttsMs: speechResult.durationMs,
+            totalMs: Math.round(performance.now() - totalStart),
+          },
+          logs,
+        },
+      }
+    } catch (error) {
+      const httpError = this.toPipelineException(error, logs)
+      const response = httpError.getResponse()
+      const message =
+        typeof response === 'object' && response !== null && 'message' in response
+          ? String((response as { message: unknown }).message)
+          : httpError.message
+
+      yield { type: 'error', message, logs }
     }
   }
 

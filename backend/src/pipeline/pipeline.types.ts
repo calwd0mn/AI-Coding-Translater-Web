@@ -23,3 +23,10 @@ export interface TranslateAudioResponse {
   timings: PipelineTimings
   logs: PipelineLogEntry[]
 }
+
+export type PipelineSSEEvent =
+  | { type: 'stage:start'; stage: PipelineStage }
+  | { type: 'stage:done'; stage: PipelineStage; message: string; durationMs: number }
+  | { type: 'stage:error'; stage: PipelineStage; message: string; durationMs: number }
+  | { type: 'result'; data: TranslateAudioResponse }
+  | { type: 'error'; message: string; logs: PipelineLogEntry[] }
