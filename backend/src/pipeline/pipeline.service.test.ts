@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import { AsrService } from '../asr/asr.service'
 import { PipelineService } from './pipeline.service'
 import { TranslateAudioDto } from './dto/translate-audio.dto'
+import { TranslationService } from '../translation/translation.service'
+import { TtsService } from '../tts/tts.service'
 
 class FakeAsrService {
   calls: Array<{ fileName: string; sourceLanguage: string }> = []
@@ -74,7 +77,11 @@ test('translateAudio orchestrates asr translation and tts services', async () =>
   const asrService = new FakeAsrService()
   const translationService = new FakeTranslationService()
   const ttsService = new FakeTtsService()
-  const service = new PipelineService(asrService, translationService, ttsService)
+  const service = new PipelineService(
+    asrService as unknown as AsrService,
+    translationService as unknown as TranslationService,
+    ttsService as unknown as TtsService,
+  )
   const dto: TranslateAudioDto = {
     sourceLanguage: 'zh',
     targetLanguage: 'en',
@@ -108,9 +115,9 @@ test('translateAudioStream emits stage events in order', async () => {
   process.env.OPENAI_API_KEY = 'test-key'
 
   const service = new PipelineService(
-    new FakeAsrService(),
-    new FakeTranslationService(),
-    new FakeTtsService(),
+    new FakeAsrService() as unknown as AsrService,
+    new FakeTranslationService() as unknown as TranslationService,
+    new FakeTtsService() as unknown as TtsService,
   )
 
   const events = []

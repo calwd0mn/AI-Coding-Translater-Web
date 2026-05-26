@@ -2,7 +2,6 @@ import {
   BadRequestException,
   HttpException,
   HttpStatus,
-  Inject,
   Injectable,
 } from '@nestjs/common'
 import { AsrService } from '../asr/asr.service'
@@ -25,19 +24,12 @@ interface TimedResult<T> {
   durationMs: number
 }
 
-type AsrRunner = Pick<AsrService, 'transcribe'>
-type TranslationRunner = Pick<TranslationService, 'translate'>
-type TtsRunner = Pick<TtsService, 'synthesizeSpeech'>
-
 @Injectable()
 export class PipelineService {
   constructor(
-    @Inject(AsrService)
-    private readonly asrService: AsrRunner,
-    @Inject(TranslationService)
-    private readonly translationService: TranslationRunner,
-    @Inject(TtsService)
-    private readonly ttsService: TtsRunner,
+    private readonly asrService: AsrService,
+    private readonly translationService: TranslationService,
+    private readonly ttsService: TtsService,
   ) {}
 
   async translateAudio(
