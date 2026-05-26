@@ -24,6 +24,13 @@ backend/.env
 backend/.env.*
 !backend/.env.example
 
+# Local tool state
+.claude/
+
+# Local generated artifacts
+outputs/
+backend/tmp-test*.wav
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
