@@ -13,6 +13,7 @@ import {
   parseApiError,
   validateAudioFile,
 } from '../lib/pipeline-utils'
+import { apiBaseUrl, getApiUrl } from '../lib/api-config'
 
 type PipelineAction =
   | { type: 'fileSelected'; file: File }
@@ -136,10 +137,13 @@ async function* streamPipeline(
   formData.append('sourceLanguage', state.sourceLanguage)
   formData.append('targetLanguage', state.targetLanguage)
 
-  const response = await fetch('/api/pipeline/translate-audio-stream', {
-    method: 'POST',
-    body: formData,
-  })
+  const response = await fetch(
+    getApiUrl('/pipeline/translate-audio-stream', apiBaseUrl),
+    {
+      method: 'POST',
+      body: formData,
+    },
+  )
 
   if (!response.ok) {
     const errorBody = parseApiError(await response.json().catch(() => null))
@@ -294,7 +298,7 @@ export function usePipeline() {
           error: '音频下载失败，请重新运行流水线',
           logs: state.logs,
         })
-    })
+      })
   }
 
   function downloadTranscript(): void {
