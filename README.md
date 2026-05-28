@@ -42,6 +42,7 @@
 ## 技术栈
 
 - 前端：Vite + React + TypeScript，使用 `useReducer` 管理单页流水线状态。
+- 移动端：Capacitor Android，复用 React 前端并封装为 Android App。
 - 后端：NestJS 本地 API 代理，使用 `FileInterceptor` 接收音频文件。
 - AI 服务：OpenAI Audio Transcriptions、Responses API、Audio Speech。
 
@@ -60,7 +61,10 @@ Copy-Item backend/.env.example backend/.env
 ```text
 OPENAI_API_KEY=你的 OpenAI API Key
 PORT=3001
+HOST=0.0.0.0
 ```
+
+`HOST=0.0.0.0` 用于 Android 真机或模拟器通过局域网访问本机后端。只运行 Web 端时也可以保留该配置。
 
 ## 运行
 
@@ -70,6 +74,49 @@ npm run dev
 
 - 前端默认地址：`http://localhost:5173`
 - 后端默认地址：`http://localhost:3001/api`
+
+## Android App 运行
+
+Android App 使用 Capacitor 封装 `frontend`，核心页面和 Web 端保持一致，API 调用复用 `backend`。
+
+首次准备：
+
+```powershell
+pwsh.exe -NoLogo -NoProfile
+npm --prefix frontend install
+npm --prefix backend install
+npm --prefix frontend run build
+cd frontend
+npx cap sync android
+```
+
+启动后端：
+
+```powershell
+pwsh.exe -NoLogo -NoProfile
+npm --prefix backend run dev
+```
+
+开发 App 时，需要让前端构建包使用手机或模拟器可访问的后端地址。
+
+真机示例：
+
+```powershell
+pwsh.exe -NoLogo -NoProfile
+$env:VITE_API_BASE_URL='http://你的电脑局域网IP:3001/api'
+npm --prefix frontend run build
+cd frontend
+npx cap sync android
+npx cap open android
+```
+
+Android 模拟器访问宿主机时通常可以使用：
+
+```powershell
+$env:VITE_API_BASE_URL='http://10.0.2.2:3001/api'
+```
+
+如果使用真机，请确保手机和电脑在同一局域网，并且防火墙允许访问 `3001` 端口。Android 工程已开启开发期 HTTP 明文请求，正式部署时建议改为 HTTPS。
 
 ## 使用流程
 
@@ -84,6 +131,8 @@ npm run dev
 ```powershell
 npm run build
 npm run lint
+npm --prefix frontend run test
+npm --prefix backend run test
 ```
 
 ## 配置说明
