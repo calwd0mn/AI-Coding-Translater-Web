@@ -690,6 +690,11 @@ audio {
   font-size: 0.875rem;
 }
 
+/* ===== Mobile Upload Placement ===== */
+.sidebar .upload-area {
+  display: none;
+}
+
 /* ===== Responsive ===== */
 @media (max-width: 920px) {
   .app-shell {
@@ -704,6 +709,14 @@ audio {
     padding: 24px 20px;
     padding-top: max(24px, env(safe-area-inset-top, 0px));
     gap: 16px;
+  }
+
+  .sidebar .upload-area {
+    display: block;
+  }
+
+  .workspace-primary > .upload-area {
+    display: none;
   }
 
   .sidebar-label select {
@@ -761,8 +774,7 @@ audio {
   }
 
   .sidebar-desc {
-    font-size: 0.8125rem;
-    line-height: 1.5;
+    display: none;
   }
 
   .sidebar-form {

@@ -1,4 +1,4 @@
-import type { FormEvent } from 'react'
+import type { FormEvent, ReactNode } from 'react'
 import { languages, targetLanguages } from '../lib/pipeline-options'
 import type { PipelineState } from '../types/pipeline'
 
@@ -9,6 +9,7 @@ interface SidebarProps {
   onTargetLanguageChange: (value: string) => void
   onSubmit: () => Promise<void>
   onReset: () => void
+  children?: ReactNode
 }
 
 export function Sidebar({
@@ -18,6 +19,7 @@ export function Sidebar({
   onTargetLanguageChange,
   onSubmit,
   onReset,
+  children,
 }: SidebarProps) {
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault()
@@ -69,6 +71,8 @@ export function Sidebar({
             </select>
           </label>
         </div>
+
+        {children}
 
         <button
           className="sidebar-run-btn"

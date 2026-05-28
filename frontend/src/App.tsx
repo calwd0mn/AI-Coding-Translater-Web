@@ -31,7 +31,9 @@ function App() {
         onTargetLanguageChange={setTargetLanguage}
         onSubmit={submitPipeline}
         onReset={resetPipeline}
-      />
+      >
+        <ControlPanel state={state} onFileChange={selectFile} compact />
+      </Sidebar>
 
       <main className="main-content">
         <div className="workspace-grid">

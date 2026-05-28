@@ -5,9 +5,10 @@ import type { PipelineState } from '../types/pipeline'
 interface ControlPanelProps {
   state: PipelineState
   onFileChange: (file: File | null) => void
+  compact?: boolean
 }
 
-export function ControlPanel({ state, onFileChange }: ControlPanelProps) {
+export function ControlPanel({ state, onFileChange, compact = false }: ControlPanelProps) {
   function handleFileChange(event: ChangeEvent<HTMLInputElement>): void {
     onFileChange(event.target.files?.[0] ?? null)
   }
@@ -34,7 +35,9 @@ export function ControlPanel({ state, onFileChange }: ControlPanelProps) {
         <span className="upload-title">
           {state.file
             ? state.file.name
-            : '拖拽音频文件到此处，或点击上传'}
+            : compact
+              ? '点击上传音频文件'
+              : '拖拽音频文件到此处，或点击上传'}
         </span>
         <span className="upload-meta">
           {state.file
