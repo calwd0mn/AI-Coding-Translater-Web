@@ -6,6 +6,7 @@ import { PipelineStrip } from './components/PipelineStrip'
 import { ResultsSection } from './components/ResultsSection'
 import { Sidebar } from './components/Sidebar'
 import { WorkspaceHeader } from './components/WorkspaceHeader'
+import { Toast } from './components/Toast'
 import { usePipeline } from './hooks/usePipeline'
 
 function App() {
@@ -20,6 +21,7 @@ function App() {
     downloadTranscript,
     downloadTranslation,
     downloadSpeech,
+    dismissDownloadMessage,
   } = usePipeline()
 
   return (
@@ -60,6 +62,14 @@ function App() {
           </section>
         </div>
       </main>
+
+      {state.downloadMessage && (
+        <Toast
+          message={state.downloadMessage}
+          type={state.downloadMessageType}
+          onClose={dismissDownloadMessage}
+        />
+      )}
     </div>
   )
 }
