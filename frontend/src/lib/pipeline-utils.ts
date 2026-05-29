@@ -1,11 +1,27 @@
-import { Capacitor } from '@capacitor/core'
-import { Directory, Filesystem } from '@capacitor/filesystem'
+import { Capacitor, registerPlugin } from '@capacitor/core'
 import type {
   ApiErrorResponse,
   PipelineLogEntry,
   PipelineStage,
 } from '../types/pipeline'
 import { maxAudioBytes, supportedAudioTypes } from './pipeline-options'
+
+interface SaveDownloadOptions {
+  fileName: string
+  mimeType: string
+  base64Data: string
+}
+
+interface SaveDownloadResult {
+  fileName: string
+  relativePath: string
+}
+
+interface DownloadsPlugin {
+  save(options: SaveDownloadOptions): Promise<SaveDownloadResult>
+}
+
+const Downloads = registerPlugin<DownloadsPlugin>('Downloads')
 
 export function formatBytes(bytes: number): string {
   if (bytes < 1024 * 1024) {
@@ -34,30 +50,40 @@ export function base64ToBlob(base64: string, mimeType: string): Blob {
   return new Blob([bytes], { type: mimeType })
 }
 
-function blobToBase64(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onloadend = () => {
-      const result = reader.result as string
-      resolve(result.slice(result.indexOf(',') + 1))
-    }
-    reader.onerror = () => reject(new Error('文件读取失败'))
-    reader.readAsDataURL(blob)
-  })
+function bytesToBase64(bytes: Uint8Array): string {
+  const chunkSize = 0x8000
+  let binary = ''
+
+  for (let index = 0; index < bytes.length; index += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(index, index + chunkSize))
+  }
+
+  return globalThis.btoa(binary)
 }
 
-export async function downloadBlob(
-  blob: Blob,
+async function blobToBase64(blob: Blob): Promise<string> {
+  const buffer = await blob.arrayBuffer()
+  return bytesToBase64(new Uint8Array(buffer))
+}
+
+async function saveNativeFile(blob: Blob, fileName: string): Promise<string> {
+  const result = await Downloads.save({
+    fileName,
+    mimeType: blob.type || 'application/octet-stream',
+    base64Data: await blobToBase64(blob),
+  })
+
+  return `已保存到下载目录：${result.relativePath}`
+}
+
+export async function saveTextFile(
+  text: string,
   fileName: string,
-): Promise<void> {
+): Promise<string> {
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' })
+
   if (Capacitor.isNativePlatform()) {
-    const base64 = await blobToBase64(blob)
-    await Filesystem.writeFile({
-      path: fileName,
-      data: base64,
-      directory: Directory.Documents,
-    })
-    return
+    return saveNativeFile(blob, fileName)
   }
 
   const url = URL.createObjectURL(blob)
@@ -66,6 +92,24 @@ export async function downloadBlob(
   link.download = fileName
   link.click()
   URL.revokeObjectURL(url)
+  return `已下载：${fileName}`
+}
+
+export async function saveBinaryFile(
+  blob: Blob,
+  fileName: string,
+): Promise<string> {
+  if (Capacitor.isNativePlatform()) {
+    return saveNativeFile(blob, fileName)
+  }
+
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = fileName
+  link.click()
+  URL.revokeObjectURL(url)
+  return `已下载：${fileName}`
 }
 
 export function getErrorMessage(error: unknown): string {

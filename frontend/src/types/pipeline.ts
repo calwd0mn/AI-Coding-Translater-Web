@@ -37,6 +37,8 @@ export interface PipelineState {
   timings: PipelineTimings | null
   logs: PipelineLogEntry[]
   error: string
+  downloadMessage: string
+  downloadMessageType: 'success' | 'error'
 }
 
 export type PipelineSSEEvent =

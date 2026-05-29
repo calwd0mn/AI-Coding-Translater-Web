@@ -8,7 +8,8 @@ import type {
 } from '../types/pipeline'
 import {
   base64ToBlob,
-  downloadBlob,
+  saveBinaryFile,
+  saveTextFile,
   getErrorMessage,
   parseApiError,
   validateAudioFile,
@@ -25,6 +26,8 @@ type PipelineAction =
   | { type: 'runSucceeded'; payload: TranslateAudioResponse; audioUrl: string }
   | { type: 'runFailed'; error: string; logs: PipelineLogEntry[] }
   | { type: 'reset' }
+  | { type: 'downloadMessageSet'; message: string; messageType: 'success' | 'error' }
+  | { type: 'downloadMessageCleared' }
 
 const initialState: PipelineState = {
   file: null,
@@ -38,6 +41,8 @@ const initialState: PipelineState = {
   timings: null,
   logs: [],
   error: '',
+  downloadMessage: '',
+  downloadMessageType: 'success' as const,
 }
 
 class PipelineRequestError extends Error {
@@ -67,6 +72,7 @@ function pipelineReducer(
         timings: null,
         logs: [],
         error: '',
+        downloadMessage: '',
       }
     case 'sourceLanguageChanged':
       return { ...state, sourceLanguage: action.value }
@@ -83,6 +89,7 @@ function pipelineReducer(
         timings: null,
         logs: [],
         error: '',
+        downloadMessage: '',
       }
     case 'stageStarted':
       return { ...state, activeStage: action.stage }
@@ -122,6 +129,14 @@ function pipelineReducer(
       }
     case 'reset':
       return initialState
+    case 'downloadMessageSet':
+      return {
+        ...state,
+        downloadMessage: action.message,
+        downloadMessageType: action.messageType,
+      }
+    case 'downloadMessageCleared':
+      return { ...state, downloadMessage: '' }
   }
 }
 
@@ -273,6 +288,10 @@ export function usePipeline() {
     }
   }
 
+  function dismissDownloadMessage(): void {
+    dispatch({ type: 'downloadMessageCleared' })
+  }
+
   function resetPipeline(): void {
     dispatch({ type: 'reset' })
   }
@@ -280,34 +299,54 @@ export function usePipeline() {
   async function downloadTranslation(): Promise<void> {
     if (!state.translation) return
 
-    const blob = new Blob([state.translation], {
-      type: 'text/plain;charset=utf-8',
-    })
-    await downloadBlob(blob, 'translation.txt')
+    try {
+      const message = await saveTextFile(
+        state.translation,
+        'translation.txt',
+      )
+      dispatch({ type: 'downloadMessageSet', message, messageType: 'success' })
+    } catch {
+      dispatch({
+        type: 'downloadMessageSet',
+        message: '下载失败，请稍后重试',
+        messageType: 'error',
+      })
+    }
   }
 
-  function downloadSpeech(): void {
+  async function downloadSpeech(): Promise<void> {
     if (!state.audioUrl) return
 
-    fetch(state.audioUrl)
-      .then((response) => response.blob())
-      .then((blob) => downloadBlob(blob, 'translated-speech.mp3'))
-      .catch(() => {
-        dispatch({
-          type: 'runFailed',
-          error: '音频下载失败，请重新运行流水线',
-          logs: state.logs,
-        })
+    try {
+      const response = await fetch(state.audioUrl)
+      const blob = await response.blob()
+      const message = await saveBinaryFile(blob, 'translated-speech.mp3')
+      dispatch({ type: 'downloadMessageSet', message, messageType: 'success' })
+    } catch {
+      dispatch({
+        type: 'downloadMessageSet',
+        message: '音频下载失败，请重新运行流水线',
+        messageType: 'error',
       })
+    }
   }
 
   async function downloadTranscript(): Promise<void> {
     if (!state.transcript) return
 
-    const blob = new Blob([state.transcript], {
-      type: 'text/plain;charset=utf-8',
-    })
-    await downloadBlob(blob, 'transcript.txt')
+    try {
+      const message = await saveTextFile(
+        state.transcript,
+        'transcript.txt',
+      )
+      dispatch({ type: 'downloadMessageSet', message, messageType: 'success' })
+    } catch {
+      dispatch({
+        type: 'downloadMessageSet',
+        message: '下载失败，请稍后重试',
+        messageType: 'error',
+      })
+    }
   }
 
   return {
@@ -321,5 +360,6 @@ export function usePipeline() {
     downloadTranscript,
     downloadTranslation,
     downloadSpeech,
+    dismissDownloadMessage,
   }
 }
