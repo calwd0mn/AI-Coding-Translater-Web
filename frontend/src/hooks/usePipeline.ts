@@ -277,13 +277,13 @@ export function usePipeline() {
     dispatch({ type: 'reset' })
   }
 
-  function downloadTranslation(): void {
+  async function downloadTranslation(): Promise<void> {
     if (!state.translation) return
 
     const blob = new Blob([state.translation], {
       type: 'text/plain;charset=utf-8',
     })
-    downloadBlob(blob, 'translation.txt')
+    await downloadBlob(blob, 'translation.txt')
   }
 
   function downloadSpeech(): void {
@@ -301,13 +301,13 @@ export function usePipeline() {
       })
   }
 
-  function downloadTranscript(): void {
+  async function downloadTranscript(): Promise<void> {
     if (!state.transcript) return
 
     const blob = new Blob([state.transcript], {
       type: 'text/plain;charset=utf-8',
     })
-    downloadBlob(blob, 'transcript.txt')
+    await downloadBlob(blob, 'transcript.txt')
   }
 
   return {

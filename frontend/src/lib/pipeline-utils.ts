@@ -1,3 +1,5 @@
+import { Capacitor } from '@capacitor/core'
+import { Directory, Filesystem } from '@capacitor/filesystem'
 import type {
   ApiErrorResponse,
   PipelineLogEntry,
@@ -32,7 +34,32 @@ export function base64ToBlob(base64: string, mimeType: string): Blob {
   return new Blob([bytes], { type: mimeType })
 }
 
-export function downloadBlob(blob: Blob, fileName: string): void {
+function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      const result = reader.result as string
+      resolve(result.slice(result.indexOf(',') + 1))
+    }
+    reader.onerror = () => reject(new Error('文件读取失败'))
+    reader.readAsDataURL(blob)
+  })
+}
+
+export async function downloadBlob(
+  blob: Blob,
+  fileName: string,
+): Promise<void> {
+  if (Capacitor.isNativePlatform()) {
+    const base64 = await blobToBase64(blob)
+    await Filesystem.writeFile({
+      path: fileName,
+      data: base64,
+      directory: Directory.Documents,
+    })
+    return
+  }
+
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url
