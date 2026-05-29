@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "concurrently \"npm --prefix frontend run dev\" \"npm --prefix backend run dev\"",
     "build": "npm --prefix frontend run build && npm --prefix backend run build",
+    "android": "pwsh.exe -NoLogo -Command \"npm --prefix frontend run build && Set-Location frontend && npx cap sync android && npx cap open android\"",
+    "android:run": "pwsh.exe -NoLogo -Command \"npm --prefix frontend run build && Set-Location frontend && npx cap sync android && npx cap run android\"",
     "lint": "npm --prefix frontend run lint && npm --prefix backend run lint",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
