@@ -790,13 +790,8 @@ audio {
     border-radius: 22px;
   }
 
-  .workspace-header h1 {
-    font-size: 1.5rem;
-  }
-
-  .subtitle {
-    font-size: 0.875rem;
-    line-height: 1.6;
+  .workspace-header {
+    display: none;
   }
 
   .upload-zone {
