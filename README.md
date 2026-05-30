@@ -1,10 +1,10 @@
 # AI 语音翻译流水线
 
-一个面向 AI Coding 笔试演示的端到端语音翻译 Web Demo：上传音频后完成 ASR 语音识别、MT 文本翻译、TTS 语音合成，并输出日志、耗时、识别文本、译文文件和合成音频。
+一个面向 AI Coding 笔试演示的端到端语音翻译应用，已提供 Web 端和 Android App。用户上传音频后，应用会依次完成 ASR 语音识别、MT 文本翻译、TTS 语音合成，并输出日志、耗时、识别文本、译文文件和合成音频。
 
 ## 项目简介
 
-本项目对应题目“构建语音翻译流水线”，选择了 Web 端交互 + NestJS 本地后端代理的实现方式。用户上传本地音频后，系统依次完成：
+本项目对应题目“构建语音翻译流水线”，使用 React + Capacitor 实现 Web 和 Android 双端交互，并通过 NestJS 本地后端代理调用 AI 服务。Android App 复用核心交互逻辑，同时针对移动端补充了原生文件下载能力。用户上传本地音频后，系统依次完成：
 
 1. ASR：音频转文本
 2. MT：源语言到目标语言翻译
@@ -15,6 +15,12 @@
 
 <p>
   <img src="docs/images/app-screenshot.png" alt="AI 语音翻译界面截图" width="1200" />
+</p>
+
+### Android App 预览
+
+<p>
+  <img src="docs/images/android-app-screenshot.png" alt="AI 语音翻译 Android App 界面截图" width="360" />
 </p>
 
 ## 题目要求对照
@@ -28,7 +34,7 @@
 4. 调用 TTS 服务合成目标语言音频并保存到本地
    已实现。后端调用 OpenAI `gpt-4o-mini-tts`，前端支持下载 `translated-speech.mp3`。
 5. 输出运行日志和产物文件
-   已实现。前端展示阶段日志与耗时，支持下载 `transcript.txt`、`translation.txt` 和合成音频。
+   已实现。前端展示阶段日志与耗时，支持下载 `transcript.txt`、`translation.txt` 和合成音频。Android App 会将产物保存到系统 `Downloads` 目录。
 
 ## 加分项完成情况
 
@@ -42,7 +48,7 @@
 ## 技术栈
 
 - 前端：Vite + React + TypeScript，使用 `useReducer` 管理单页流水线状态。
-- 移动端：Capacitor Android，复用 React 前端并封装为 Android App。
+- 移动端：Capacitor Android，复用 React 前端并封装为 Android App；通过原生 `MediaStore` 插件将导出文件保存到系统 `Downloads` 目录。
 - 后端：NestJS 本地 API 代理，使用 `FileInterceptor` 接收音频文件。
 - AI 服务：OpenAI Audio Transcriptions、Responses API、Audio Speech。
 
@@ -77,27 +83,31 @@ npm run dev
 
 ## Android App 运行
 
-Android App 使用 Capacitor 封装 `frontend`，核心页面和 Web 端保持一致，API 调用复用 `backend`。
+Android App 使用 Capacitor 封装 `frontend`，核心页面和 Web 端保持一致，API 调用复用 `backend`。模拟器构建会自动注入 `http://10.0.2.2:3001/api`，避免与 Web 端的 `/api` 代理配置混用。
 
-首次准备：
+先启动后端：
 
 ```powershell
 pwsh.exe -NoLogo -NoProfile
-npm --prefix frontend install
 npm --prefix backend install
-npm --prefix frontend run build
-cd frontend
-npx cap sync android
-```
-
-启动后端：
-
-```powershell
-pwsh.exe -NoLogo -NoProfile
 npm --prefix backend run dev
 ```
 
-开发 App 时，需要让前端构建包使用手机或模拟器可访问的后端地址。
+使用 Android 模拟器开发时，在项目根目录执行：
+
+```powershell
+npm run android
+```
+
+该命令会依次完成前端构建、Capacitor Android 同步，并打开 Android Studio。之后在 Android Studio 中启动模拟器并运行 `app`。
+
+也可以直接从命令行构建、同步、部署并启动 App：
+
+```powershell
+npm run android:run
+```
+
+开发真机 App 时，需要让构建包使用手机可访问的局域网地址：
 
 真机示例：
 
@@ -110,12 +120,6 @@ npx cap sync android
 npx cap open android
 ```
 
-Android 模拟器访问宿主机时通常可以使用：
-
-```powershell
-$env:VITE_API_BASE_URL='http://10.0.2.2:3001/api'
-```
-
 如果使用真机，请确保手机和电脑在同一局域网，并且防火墙允许访问 `3001` 端口。Android 工程已开启开发期 HTTP 明文请求，正式部署时建议改为 HTTPS。
 
 ## 使用流程
@@ -124,7 +128,7 @@ $env:VITE_API_BASE_URL='http://10.0.2.2:3001/api'
 2. 选择源语言和目标语言。
 3. 点击“运行流水线”。
 4. 查看识别文本、翻译文本、合成音频、阶段耗时和运行日志。
-5. 下载 `transcript.txt`、`translation.txt` 和 `translated-speech.mp3`。
+5. 下载 `transcript.txt`、`translation.txt` 和 `translated-speech.mp3`。Android App 会将文件保存到系统 `Downloads` 目录。
 
 ## 验证
 
@@ -138,6 +142,7 @@ npm --prefix backend run test
 ## 配置说明
 
 - API Key 只在 `backend/.env` 中使用，不会进入前端包。
+- Web 开发环境使用 Vite `/api` 代理访问本机后端；Android 模拟器构建使用 `http://10.0.2.2:3001/api` 访问宿主机后端。
 - 后端默认模型：
   - ASR：`gpt-4o-mini-transcribe`
   - 翻译：`gpt-5-mini`
@@ -147,5 +152,6 @@ npm --prefix backend run test
 ## 工程说明
 
 - 前端使用 React + TypeScript，状态集中在 `usePipeline` 中管理。
+- Android App 使用 Capacitor 封装，并注册原生下载插件写入系统公共下载目录。
 - 后端使用 NestJS，并已拆分为 `openai`、`asr`、`translation`、`tts` 和 `pipeline` 编排模块。
 - `pipeline` 对外保留统一接口，内部按能力解耦，便于扩展其他阶段或替换底层服务。
